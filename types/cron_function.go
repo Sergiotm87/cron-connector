@@ -40,15 +40,14 @@ func (c *CronFunctions) Contains(cF *CronFunction) bool {
 }
 
 // ToCronFunction converts a requests.Function object to the CronFunction and returns error if it is not possible
-func ToCronFunction(f requests.Function, topic string) (CronFunction, error) {
+func ToCronFunction(f requests.Function, cronlabel string) (CronFunction, error) {
 	if f.Annotations == nil {
 		return CronFunction{}, errors.New(fmt.Sprint(f.Name, " has no annotations."))
 	}
-	fTopic := (*f.Annotations)["topic"]
-	fSchedule := (*f.Annotations)["schedule"]
+	fSchedule := (*f.Labels)["cronlabel"]
 
-	if fTopic != topic {
-		return CronFunction{}, errors.New(fmt.Sprint(f.Name, " has wrong topic: ", fTopic))
+	if fSchedule != cronlabel {
+		return CronFunction{}, errors.New(fmt.Sprint(f.Name, " has wrong cronlabel: ", fSchedule))
 	}
 
 	if !CheckSchedule(fSchedule) {
@@ -102,7 +101,7 @@ func (c CronFunction) InvokeFunction(i *types.Invoker) (*[]byte, error) {
 		Status:   res.StatusCode,
 		Header:   &res.Header,
 		Function: c.Name,
-		Topic:    (*c.FuncData.Annotations)["topic"],
+		Topic:    (*c.FuncData.Annotations)["cronlabel"],
 	}
 
 	return body, nil

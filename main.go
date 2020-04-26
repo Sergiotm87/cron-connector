@@ -25,11 +25,11 @@ func main() {
 
 	controller := types.NewController(creds, config)
 	cronScheduler := cfunction.NewScheduler()
-	topic := "cron-function"
+	cronlabel := "com.openfaas.cron"
 	interval := time.Second * 10
 
 	cronScheduler.Start()
-	err = startFunctionProbe(interval, topic, controller, cronScheduler, controller.Invoker)
+	err = startFunctionProbe(interval, cronlabel, controller, cronScheduler, controller.Invoker)
 
 	if err != nil {
 		panic(err)
@@ -50,7 +50,7 @@ func getControllerConfig() (*types.ControllerConfig, error) {
 	}, nil
 }
 
-func startFunctionProbe(interval time.Duration, topic string, c *types.Controller, cronScheduler *cfunction.Scheduler, invoker *types.Invoker) error {
+func startFunctionProbe(interval time.Duration, cronlabel string, c *types.Controller, cronScheduler *cfunction.Scheduler, invoker *types.Invoker) error {
 	runningFuncs := make(cfunction.ScheduledFunctions, 0)
 	lookupBuilder := cfunction.FunctionLookupBuilder{
 		GatewayURL:  c.Config.GatewayURL,
@@ -69,7 +69,7 @@ func startFunctionProbe(interval time.Duration, topic string, c *types.Controlle
 			return errors.New(fmt.Sprint("Couldn't fetch Functions due to: ", err))
 		}
 
-		newCronFunctions := RequestsToCronFunctions(functions, topic)
+		newCronFunctions := RequestsToCronFunctions(functions, cronlabel)
 		addFuncs, deleteFuncs := GetNewAndDeleteFuncs(newCronFunctions, runningFuncs)
 
 		for _, function := range deleteFuncs {
@@ -94,10 +94,10 @@ func startFunctionProbe(interval time.Duration, topic string, c *types.Controlle
 }
 
 // RequestsToCronFunctions converts an array of requests.Function object to CronFunction, ignoring those that cannot be converted
-func RequestsToCronFunctions(functions []requests.Function, topic string) cfunction.CronFunctions {
+func RequestsToCronFunctions(functions []requests.Function, cronlabel string) cfunction.CronFunctions {
 	newCronFuncs := make(cfunction.CronFunctions, 0)
 	for _, function := range functions {
-		cF, err := cfunction.ToCronFunction(function, topic)
+		cF, err := cfunction.ToCronFunction(function, cronlabel)
 		if err != nil {
 			continue
 		}
